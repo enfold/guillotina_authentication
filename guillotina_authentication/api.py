@@ -1,4 +1,6 @@
+import os
 from datetime import datetime, timedelta
+from hashlib import sha1
 from urllib.parse import urlencode
 
 import aioauth_client
@@ -8,16 +10,32 @@ from aiohttp import web
 from guillotina import app_settings, configure
 from guillotina.event import notify
 from guillotina.events import UserLogin
-from guillotina.response import HTTPFound, HTTPNotFound
+from guillotina.response import HTTPBadRequest, HTTPFound, HTTPNotFound
 from guillotina_authentication import cache, exceptions
 
 aioauth_client.TwitterClient.authentication_url = 'https://api.twitter.com/oauth/authenticate'  # noqa
+
+
+class HydraClient(aioauth_client.OAuth2Client):
+
+    @property
+    def user_info_url(self):
+        return os.path.join(self.base_url, 'userinfo')
+
+    @staticmethod
+    def user_parse(data):
+        return {
+            'id': data['sub'],
+            'displayName': 'Foobar'
+        }
+
 
 config_mappings = {
     'twitter': aioauth_client.TwitterClient,
     'facebook': aioauth_client.FacebookClient,
     'github': aioauth_client.GithubClient,
-    'google': aioauth_client.GoogleClient
+    'google': aioauth_client.GoogleClient,
+    'hydra': HydraClient
 }
 
 oauth1_providers = ('twitter', )
@@ -34,41 +52,35 @@ http_exception_mappings = {
 
 
 def get_client(provider, **kwargs):
-    if provider not in config_mappings:
-        raise exceptions.ProviderNotSupportedException(provider)
     if provider not in app_settings['auth_providers']:
         raise exceptions.ProviderNotConfiguredException(provider)
-    config = app_settings['auth_providers'][provider]
-    if 'configuration' not in config:
+    provider_config = app_settings['auth_providers'][provider]
+    if 'configuration' not in provider_config:
         raise exceptions.ProviderMisConfiguredException(provider)
-    kwargs.update(config['configuration'])
-    client = config_mappings[provider](**kwargs)
+    configuration = provider_config['configuration']
+    if provider not in config_mappings:
+        # in this case, make sure we have all necessary config to build
+        if ('authorize_url' not in configuration or
+                'access_token_url' not in configuration):
+            raise exceptions.ProviderNotSupportedException(provider)
+    kwargs.update(configuration)
+    if provider not in config_mappings:
+        ProviderClass = aioauth_client.OAuth2Client
+    else:
+        ProviderClass = config_mappings[provider]
+    client = ProviderClass(**kwargs)
     client.provider = provider
+    client.send_state = provider_config.get('state') or False
     return client
 
 
-async def get_authorization_url(client, *args, **kwargs):
+async def get_authorization_url(client, *args, callback=None, **kwargs):
     config = app_settings['auth_providers'][client.provider]
     if 'scope' in config:
         kwargs['scope'] = config['scope']
 
     args = list(args)
-    if client.provider in oauth1_providers:
-        request_token, request_token_secret, _ = await client.get_request_token(**kwargs)  # noqa
-        args.append(request_token)
-        kwargs = {}
-    return HTTPFound(client.get_authorize_url(*args, **kwargs))
-
-
-async def get_authentication_url(client, *args, callback=None, **kwargs):
-    config = app_settings['auth_providers'][client.provider]
-    if 'scope' in config:
-        kwargs['scope'] = config['scope']
-
-    args = list(args)
-    url = getattr(
-        client, 'authentication_url',
-        client.authorize_url)
+    url = kwargs.pop('url', client.authorize_url)
     if client.provider in oauth1_providers:
         request_token, request_token_secret, _ = await client.get_request_token(  # noqa
             oauth_callback=callback
@@ -83,10 +95,23 @@ async def get_authentication_url(client, *args, callback=None, **kwargs):
             'client_id': client.client_id, 'response_type': 'code',
             'redirect_uri': callback
         })
+        if client.send_state:
+            params['state'] = sha1(str(
+                aioauth_client.RANDOM()).encode('ascii')).hexdigest()
+            await cache.put(params['state'], 'nonce')
         return url + '?' + urlencode(params)
 
 
-@configure.service(method='GET', name='@auth-providers',
+async def get_authentication_url(client, *args, callback=None, **kwargs):
+    if not hasattr(client, 'authentication_url'):
+        return await get_authorization_url(
+            client, *args, callback=callback, **kwargs)
+    kwargs['url'] = client.authentication_url
+    return await get_authorization_url(
+        client, *args, callback=callback, **kwargs)
+
+
+@configure.service(method='GET', name='@authentication-providers',
                    allow_access=True)
 async def auth_providers(context, request):
     return list(set(app_settings['auth_providers']) & set(config_mappings.keys()))
@@ -150,9 +175,10 @@ async def auth_callback(context, request):
             provider,
             oauth_token=oauth_token,
             oauth_token_secret=oauth_token_secret)
-        user, user_data = await client.user_info()
     else:
         client = get_client(provider)
+        if 'error' in request.url.query:
+            raise HTTPBadRequest(content=dict(request.url.query))
         code = request.url.query['code']
         otoken, _ = await client.get_access_token(
             code,
@@ -162,25 +188,17 @@ async def auth_callback(context, request):
             provider,
             access_token=otoken,
         )
-        user, user_data = await client.user_info()
 
-    email = user_data.get('email')
-    if 'emails' in user_data:
-        for em in user_data['emails']:
-            if isinstance(em, dict):
-                if 'value' in em:
-                    email = em['value']
-                    break
-            else:
-                email = em
-    username = user_data.get('nickname', user_data.get('screen_name'))
+    user, user_data = await client.user_info()
+
     data = {
         'iat': datetime.utcnow(),
         'exp': datetime.utcnow() + timedelta(seconds=60 * 60 * 1),
-        'id': f"{provider}:{user_data['id']}",
-        'name': user_data.get('displayName', user_data.get('name')),
-        'email': email,
-        'username': username,
+        'id': f"{provider}:{user.id}",
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email,
+        'username': user.username,
     }
     jwt_token = jwt.encode(data, app_settings['jwt']['secret']).decode('utf-8')
 

@@ -7,7 +7,7 @@ This guillotina app provides authentication through different providers:
 - [x] google
 - [x] github
 - [ ] facebook
-- [ ] ORY hydra based?
+- [x] ORY hydra based?
 
 
 Example configuration::
@@ -30,6 +30,13 @@ Example configuration::
 
 Endpoints:
 
- - GET /@auth-providers
+ - GET /@authentication-providers
  - GET /@authorize/{provider}
  - GET /@callback/{provider}
+
+
+ Identity provider
+ -----------------
+
+ You can also integrate this package to make guillotina an identity provider
+
