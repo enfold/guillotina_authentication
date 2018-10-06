@@ -48,6 +48,11 @@ auth_providers:
       client_id: foobar
       client_secret: foobar
     scope: openid email
+  github:
+    configuration:
+      client_id: foobar
+      client_secret: foobar
+    scope: read:user
 
 # frontend url to handle storing auth
 auth_callback_url: http://localhost:8080/foobar

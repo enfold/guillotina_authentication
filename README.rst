@@ -5,7 +5,7 @@ This guillotina app provides authentication through different providers:
 
 - [x] twitter
 - [x] google
-- [ ] github
+- [x] github
 - [ ] facebook
 - [ ] ORY hydra based?
 
@@ -33,4 +33,3 @@ Endpoints:
  - GET /@auth-providers
  - GET /@authorize/{provider}
  - GET /@callback/{provider}
- 
