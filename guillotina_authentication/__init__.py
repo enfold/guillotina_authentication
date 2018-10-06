@@ -21,4 +21,3 @@ def includeme(root):
     custom application initialization here
     """
     configure.scan('guillotina_authentication.api')
-    configure.scan('guillotina_authentication.install')

@@ -1,16 +1,15 @@
-from guillotina import configure
-from guillotina.event import notify
-from guillotina.events import UserLogin
-from aiohttp import web
-from urllib.parse import urlencode
-from guillotina import app_settings
-from guillotina.response import HTTPNotFound, HTTPFound
-import aioauth_client
-from guillotina_authentication import exceptions
-from guillotina_authentication import cache
 from datetime import datetime, timedelta
+from urllib.parse import urlencode
+
+import aioauth_client
 import jwt
 import yarl
+from aiohttp import web
+from guillotina import app_settings, configure
+from guillotina.event import notify
+from guillotina.events import UserLogin
+from guillotina.response import HTTPFound, HTTPNotFound
+from guillotina_authentication import cache, exceptions
 
 aioauth_client.TwitterClient.authentication_url = 'https://api.twitter.com/oauth/authenticate'  # noqa
 
