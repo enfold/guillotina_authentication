@@ -26,3 +26,11 @@ Example configuration::
     # frontend url to handle storing auth
     auth_callback_url: http://localhost:8080/foobar
 
+
+
+Endpoints:
+
+ - GET /@auth-providers
+ - GET /@authorize/{provider}
+ - GET /@callback/{provider}
+ 
