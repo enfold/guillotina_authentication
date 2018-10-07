@@ -49,4 +49,5 @@ Endpoints
 
  - GET /@authentication-providers
  - GET /@authorize/{provider}
+ - GET /@authenticate/{provider}
  - GET /@callback/{provider}
