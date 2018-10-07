@@ -44,7 +44,8 @@ Example configuration::
 
 
 
-Endpoints:
+Endpoints
+---------
 
  - GET /@authentication-providers
  - GET /@authorize/{provider}
