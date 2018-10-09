@@ -106,7 +106,9 @@ async def auth_callback(context, request):
         'email': user.email,
         'username': user.username,
         'client': provider,
-        'client_args': client_args
+        'client_args': client_args,
+        'allowed_scopes': user_data.get('allowed_scopes'),
+        'scope': request.url.query.get('scope').split(' '),
     })
 
     await notify(UserLogin(user, jwt_token))

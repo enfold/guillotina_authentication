@@ -19,7 +19,11 @@ class HydraClient(aioauth_client.OAuth2Client):
     def user_parse(data):
         return {
             'id': data['sub'],
-            'displayName': 'Foobar'
+            'allowed_scopes': data.get('allowed_scopes') or [],
+            'data': data.get('data') or {},
+            'email': data.get('email'),
+            'phone': data.get('phone'),
+            'username': data.get('username')
         }
 
 

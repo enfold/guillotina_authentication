@@ -29,6 +29,25 @@ class OAuthClientIdentifier:
             math.ceil(math.ceil(time.time()) / USER_CACHE_DURATION)
         )
 
+    def apply_scope(self, user, data):
+        container_id = getattr(self.request, '_container_id', None)
+        if container_id is None:
+            # XXX do not support root? Dunno.
+            return
+        allowed_scopes = data.get('allowed_scopes') or []
+        for scope in data.get('scope') or []:
+            if scope not in allowed_scopes:
+                continue
+            split = scope.split(':')
+            if len(split) != 3:
+                continue
+            if container_id != split[0]:
+                continue
+            if split[1] == 'role':
+                user._roles[split[2]] = 1
+            if split[1] == 'permission':
+                user._permissions[split[2]] = 1
+
     async def get_user(self, token):
         if token.get('type') not in ('bearer', 'wstoken', 'cookie'):
             return
@@ -74,5 +93,7 @@ class OAuthClientIdentifier:
             return
 
         user = GuillotinaUser(user_id=user.id, properties=user_data)
+        user._validated_jwt = validated_jwt
+        self.apply_scope(user, validated_jwt)
         store[cache_key] = user
         return user
