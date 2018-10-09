@@ -5,7 +5,12 @@ from setuptools import setup
 try:
     README = open('README.rst').read()
 except IOError:
-    README = None
+    README = ''
+
+try:
+    README += '\n\n' + open('CHANGELOG.rst').read()
+except IOError:
+    pass
 
 setup(
     name='guillotina_authentication',
