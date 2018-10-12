@@ -1,7 +1,8 @@
 1.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Be able to customize callback
+  [vangheem]
 
 
 1.0.0 (2018-10-09)

@@ -41,7 +41,10 @@ async def auth(context, request):
             raise ExcType(content={
                 'reason': reason.format(provider=provider)
             })
-    callback_url = str(request.url.with_path('@callback/' + provider))
+    if 'callback' not in request.url.query:
+        callback_url = str(request.url.with_path('@callback/' + provider))
+    else:
+        callback_url = request.url.query['callback']
     return HTTPFound(await utils.get_authentication_url(
         client, callback=callback_url))
 
@@ -91,9 +94,14 @@ async def auth_callback(context, request):
         if 'error' in request.url.query:
             raise HTTPBadRequest(content=dict(request.url.query))
         code = request.url.query['code']
+
+        if 'callback' not in request.url.query:
+            callback = str(request.url.with_path('@callback/' + provider))
+        else:
+            callback = request.url.query['callback']
+
         otoken, _ = await client.get_access_token(
-            code,
-            redirect_uri=str(request.url.with_path('@callback/' + provider)))
+            code, redirect_uri=callback)
 
         client_args = dict(access_token=otoken)
 
