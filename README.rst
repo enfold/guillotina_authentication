@@ -51,3 +51,9 @@ Endpoints
  - GET /@authorize/{provider}
  - GET /@authenticate/{provider}
  - GET /@callback/{provider}
+
+
+TODO
+----
+
+- be able to specify custom scopes to authenicate with
