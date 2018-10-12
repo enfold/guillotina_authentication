@@ -1,4 +1,4 @@
-1.0.1 (unreleased)
+1.0.1 (2018-10-11)
 ------------------
 
 - Be able to customize callback
