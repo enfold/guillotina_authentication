@@ -14,7 +14,7 @@ except IOError:
 
 setup(
     name='guillotina_authentication',
-    version='1.0.2',
+    version='1.0.3.dev0',
     description='Authenticate Guillotina with various providers',
     long_description=README,
     install_requires=[
