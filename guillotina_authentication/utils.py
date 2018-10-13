@@ -64,7 +64,10 @@ def get_client(provider, **kwargs):
 async def get_authorization_url(client, *args, callback=None, **kwargs):
     config = app_settings['auth_providers'][client.provider]
     if 'scope' in config:
-        kwargs['scope'] = config['scope']
+        if 'scope' not in config:
+            kwargs['scope'] = config['scope']
+        else:
+            kwargs['scope'] += ' ' + config['scope']
 
     args = list(args)
     url = kwargs.pop('url', client.authorize_url)

@@ -28,9 +28,19 @@ async def auth_providers(context, request):
 
 
 @configure.service(context=IApplication, method='GET',
-                   name='@authenticate/{provider}', allow_access=True)
+                   name='@authenticate/{provider}', allow_access=True,
+                   parameters=[{
+                        'in': 'query',
+                        'name': 'scope',
+                        'description': 'scape separated list'
+                   }])
 @configure.service(context=IContainer, method='GET',
-                   name='@authenticate/{provider}', allow_access=True)
+                   name='@authenticate/{provider}', allow_access=True,
+                   parameters=[{
+                        'in': 'query',
+                        'name': 'scope',
+                        'description': 'scape separated list'
+                   }])
 async def auth(context, request):
     provider = request.matchdict['provider']
     try:
@@ -46,13 +56,24 @@ async def auth(context, request):
     else:
         callback_url = request.url.query['callback']
     return HTTPFound(await utils.get_authentication_url(
-        client, callback=callback_url))
+        client, callback=callback_url,
+        scope=request.url.query.get('scope') or ''))
 
 
 @configure.service(context=IApplication, method='GET',
-                   name='@authorize/{provider}', allow_access=True)
+                   name='@authorize/{provider}', allow_access=True,
+                   parameters=[{
+                        'in': 'query',
+                        'name': 'scope',
+                        'description': 'scape separated list'
+                   }])
 @configure.service(context=IContainer, method='GET',
-                   name='@authorize/{provider}', allow_access=True)
+                   name='@authorize/{provider}', allow_access=True,
+                   parameters=[{
+                        'in': 'query',
+                        'name': 'scope',
+                        'description': 'scape separated list'
+                   }])
 async def authorize(context, request):
     provider = request.matchdict['provider']
     try:
@@ -65,7 +86,8 @@ async def authorize(context, request):
             })
     callback_url = str(request.url.with_path('@callback/' + provider))
     return HTTPFound(await utils.get_authorization_url(
-        client, callback=callback_url))
+        client, callback=callback_url,
+        scope=request.url.query.get('scope') or ''))
 
 
 @configure.service(context=IApplication, method='GET',

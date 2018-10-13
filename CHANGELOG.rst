@@ -1,7 +1,8 @@
 1.0.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Be able to customize the requested scopes
+  [vangheem]
 
 
 1.0.1 (2018-10-11)
