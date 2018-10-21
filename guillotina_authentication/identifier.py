@@ -31,22 +31,23 @@ class OAuthClientIdentifier:
 
     def apply_scope(self, user, data):
         container_id = getattr(self.request, '_container_id', None)
-        if container_id is None:
-            # XXX do not support root? Dunno.
-            return
         allowed_scopes = data.get('allowed_scopes') or []
         for scope in data.get('scope') or []:
             if scope not in allowed_scopes:
                 continue
             split = scope.split(':')
-            if len(split) != 3:
+            if len(split) not in (2, 3):
                 continue
-            if container_id != split[0]:
-                continue
-            if split[1] == 'role':
-                user._roles[split[2]] = 1
-            if split[1] == 'permission':
-                user._permissions[split[2]] = 1
+            if len(split) == 3:
+                if container_id is None:
+                    # on root, do not apply this guy...
+                    continue
+                if container_id != split[0]:
+                    continue
+            if split[-2] == 'role':
+                user._roles[split[-1]] = 1
+            if split[-2] == 'permission':
+                user._permissions[split[-1]] = 1
 
     async def get_user(self, token):
         if token.get('type') not in ('bearer', 'wstoken', 'cookie'):

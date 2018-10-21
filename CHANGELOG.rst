@@ -1,7 +1,8 @@
 1.0.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Allow global scopes to be applied
+  [vangheem]
 
 
 1.0.2 (2018-10-13)
