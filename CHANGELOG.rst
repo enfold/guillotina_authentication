@@ -1,4 +1,4 @@
-1.0.4 (unreleased)
+1.0.4 (2019-01-10)
 ------------------
 
 - Temporal fix on urls.
