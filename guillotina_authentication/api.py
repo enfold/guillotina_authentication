@@ -85,6 +85,7 @@ async def authorize(context, request):
                 'reason': reason.format(provider=provider)
             })
     callback_url = str(request.url.with_path('@callback/' + provider))
+    print(callback_url)
     return HTTPFound(await utils.get_authorization_url(
         client, callback=callback_url,
         scope=request.url.query.get('scope') or ''))
@@ -126,6 +127,7 @@ async def auth_callback(context, request):
         else:
             callback = request.url.query['callback']
 
+        print(callback)
         otoken, _ = await client.get_access_token(
             code, redirect_uri=callback)
 
