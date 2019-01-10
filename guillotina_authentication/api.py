@@ -131,6 +131,10 @@ async def auth_callback(context, request):
             callback = request.url.query['callback']
 
         logger.error('Callback: ' + callback)
+        logger.error('X-Forwarded-Proto: ' + request.headers.get('X-Forwarded-Proto'))
+        logger.error('request.scheme: ' + request.scheme)
+        logger.error('forwarded: ' + request.forwarded)
+
         otoken, _ = await client.get_access_token(
             code, redirect_uri=callback)
 
