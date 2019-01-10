@@ -115,6 +115,10 @@ async def auth_callback(context, request):
         client = utils.get_client(provider)
         if 'error' in request.url.query:
             raise HTTPBadRequest(content=dict(request.url.query))
+
+        if 'code' not in request.url.query:
+            raise HTTPBadRequest(content=dict(request.url.query))
+
         code = request.url.query['code']
 
         if 'callback' not in request.url.query:
