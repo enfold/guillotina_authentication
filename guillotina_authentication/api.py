@@ -132,7 +132,8 @@ async def auth_callback(context, request):
 
         forwarded_proto = request.headers.get('X-Forwarded-Proto', None)
         if forwarded_proto and forwarded_proto != request.scheme:
-            callback = callback.replace(request.scheme, forwarded_proto)
+            callback = callback.replace(
+                request.scheme + '://', forwarded_proto + '://')
 
         otoken, _ = await client.get_access_token(
             code, redirect_uri=callback)
