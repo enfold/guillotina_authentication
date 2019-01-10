@@ -1,4 +1,5 @@
 import yarl
+import logging
 from aiohttp import web
 from guillotina import api, app_settings, configure
 from guillotina.auth import authenticate_user
@@ -16,6 +17,9 @@ http_exception_mappings = {
     exceptions.ProviderMisConfiguredException: (
         HTTPNotFound, '{provider} is misconfigured'),
 }
+
+
+logger = logging.getLogger(__name__)
 
 
 @configure.service(context=IApplication, method='GET',
@@ -85,7 +89,6 @@ async def authorize(context, request):
                 'reason': reason.format(provider=provider)
             })
     callback_url = str(request.url.with_path('@callback/' + provider))
-    print(callback_url)
     return HTTPFound(await utils.get_authorization_url(
         client, callback=callback_url,
         scope=request.url.query.get('scope') or ''))
@@ -127,7 +130,7 @@ async def auth_callback(context, request):
         else:
             callback = request.url.query['callback']
 
-        print(callback)
+        logger.error('Callback: ' + callback)
         otoken, _ = await client.get_access_token(
             code, redirect_uri=callback)
 
