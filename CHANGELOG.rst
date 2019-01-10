@@ -1,7 +1,8 @@
 1.0.4 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Temporal fix on urls.
+  [bloodbare]
 
 
 1.0.3 (2018-10-20)
