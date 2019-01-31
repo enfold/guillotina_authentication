@@ -7,6 +7,7 @@ from guillotina.event import notify
 from guillotina.events import UserLogin
 from guillotina.interfaces import IApplication, IContainer
 from guillotina.response import HTTPBadRequest, HTTPFound, HTTPNotFound
+from guillotina.api.login import Refresh as GuillotinaRefresh
 from guillotina_authentication import cache, exceptions, utils
 
 http_exception_mappings = {
@@ -109,7 +110,7 @@ async def auth_callback(context, request):
         if request_token is None:
             raise web.HTTPBadRequest(
                 reason='Failed to obtain proper request token.')
-        oauth_token, oauth_token_secret, _ = await client.get_access_token(
+        oauth_token, oauth_token_secret, otoken_data = await client.get_access_token(  # noqa
             oauth_verifier, oauth_token)
 
         client_args = dict(
@@ -135,10 +136,15 @@ async def auth_callback(context, request):
             callback = callback.replace(
                 request.scheme + '://', forwarded_proto + '://')
 
-        otoken, _ = await client.get_access_token(
+        otoken, otoken_data = await client.get_access_token(
             code, redirect_uri=callback)
 
         client_args = dict(access_token=otoken)
+
+    if 'expires_in' in otoken_data:
+        timeout = otoken_data['expires_in']
+    else:
+        timeout = 60 * 60 * 1
 
     client = utils.get_client(provider, **client_args)
     user, user_data = await client.user_info()
@@ -152,7 +158,8 @@ async def auth_callback(context, request):
         'client_args': client_args,
         'allowed_scopes': user_data.get('allowed_scopes'),
         'scope': request.url.query.get('scope').split(' '),
-    })
+        'identifier': 'oauth'
+    }, timeout=timeout)
 
     await notify(UserLogin(user, jwt_token))
 

@@ -1,7 +1,8 @@
 1.0.5 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Optimization and labeling the jwt to know that comes from oauth.
+  [bloodbare]
 
 
 1.0.4 (2019-01-10)
