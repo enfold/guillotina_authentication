@@ -1,4 +1,4 @@
-1.0.5 (unreleased)
+1.0.5 (2019-01-31)
 ------------------
 
 - Optimization and labeling the jwt to know that comes from oauth.
