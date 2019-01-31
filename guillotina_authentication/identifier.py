@@ -64,22 +64,23 @@ class OAuthClientIdentifier:
         except KeyError:
             pass
 
-        try:
-            validated_jwt = jwt.decode(
-                token['token'],
-                app_settings['jwt']['secret'],
-                algorithms=[app_settings['jwt']['algorithm']])
-        except jwt.exceptions.ExpiredSignatureError:
-            logger.warning("Token Expired")
-            raise HTTPUnauthorized()
-        except jwt.InvalidIssuedAtError:
-            logger.warning("Back to the future")
-            validated_jwt = jwt.decode(
-                token['token'],
-                app_settings['jwt']['secret'],
-                algorithms=[app_settings['jwt']['algorithm']],
-                options=NON_IAT_VERIFY)
+        # try:
+        #     validated_jwt = jwt.decode(
+        #         token['token'],
+        #         app_settings['jwt']['secret'],
+        #         algorithms=[app_settings['jwt']['algorithm']])
+        # except jwt.exceptions.ExpiredSignatureError:
+        #     logger.warning("Token Expired")
+        #     raise HTTPUnauthorized()
+        # except jwt.InvalidIssuedAtError:
+        #     logger.warning("Back to the future")
+        #     validated_jwt = jwt.decode(
+        #         token['token'],
+        #         app_settings['jwt']['secret'],
+        #         algorithms=[app_settings['jwt']['algorithm']],
+        #         options=NON_IAT_VERIFY)
 
+        validated_jwt = token['decoded']
         if ('client' not in validated_jwt or
                 'client_args' not in validated_jwt):
             return
