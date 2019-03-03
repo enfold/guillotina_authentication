@@ -92,7 +92,8 @@ async def authorize(context, request):
     callback_url = str(request.url.with_path('@callback/' + provider))
     return HTTPFound(await utils.get_authorization_url(
         client, callback=callback_url,
-        scope=request.url.query.get('scope') or ''))
+        scope=request.url.query.get('scope') or ''),
+        access_type='offline')
 
 
 @configure.service(context=IApplication, method='GET',
@@ -139,7 +140,9 @@ async def auth_callback(context, request):
         otoken, otoken_data = await client.get_access_token(
             code, redirect_uri=callback)
 
-        client_args = dict(access_token=otoken)
+        client_args = dict(
+            access_token=otoken,
+            refresh_token=otoken_data['refresh_token'])
 
     if 'expires_in' in otoken_data:
         timeout = otoken_data['expires_in']
