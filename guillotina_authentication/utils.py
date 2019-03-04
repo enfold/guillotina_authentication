@@ -82,7 +82,10 @@ async def get_authorization_url(client, *args, callback=None, **kwargs):
     else:
         params = dict(client.params, **kwargs)
         params.update({
-            'client_id': client.client_id, 'response_type': 'code',
+            'access_type': 'offline',
+            'prompt': 'consent',
+            'client_id': client.client_id,
+            'response_type': 'code',
             'redirect_uri': callback
         })
         if client.send_state:
