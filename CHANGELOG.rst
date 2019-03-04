@@ -1,4 +1,4 @@
-1.0.6 (unreleased)
+1.0.6 (2019-03-04)
 ------------------
 
 - Option to refresh token.
