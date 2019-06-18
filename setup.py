@@ -18,7 +18,7 @@ setup(
     description='Authenticate Guillotina with various providers',
     long_description=README,
     install_requires=[
-        'guillotina>=4.2.10',
+        'guillotina>=4.2.10,<5',
         'aioauth-client',
         'guillotina_rediscache>=2.0.4'
     ],
