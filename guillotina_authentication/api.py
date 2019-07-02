@@ -2,13 +2,13 @@ import yarl
 import logging
 from aiohttp import web
 from guillotina import api, app_settings, configure
+from guillotina.component import get_utility
 from guillotina.auth import authenticate_user
 from guillotina.event import notify
 from guillotina.events import UserLogin
-from guillotina.interfaces import IApplication, IContainer
+from guillotina.interfaces import IApplication, IContainer, ICacheUtility
 from guillotina.response import HTTPBadRequest, HTTPFound, HTTPNotFound
-from guillotina.api.login import Refresh as GuillotinaRefresh
-from guillotina_authentication import cache, exceptions, utils
+from guillotina_authentication import exceptions, utils, CACHE_PREFIX
 
 http_exception_mappings = {
     exceptions.ProviderNotSupportedException: (
@@ -18,7 +18,6 @@ http_exception_mappings = {
     exceptions.ProviderMisConfiguredException: (
         HTTPNotFound, '{provider} is misconfigured'),
 }
-
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +106,8 @@ async def auth_callback(context, request):
         oauth_verifier = request.url.query.get('oauth_verifier')
         oauth_token = request.url.query.get('oauth_token')
         client = utils.get_client(provider, oauth_token=oauth_token)
-        request_token = await cache.get(oauth_token)
+        cache_utility = get_utility(ICacheUtility)
+        request_token = await cache_utility.get(CACHE_PREFIX + oauth_token)
         if request_token is None:
             raise web.HTTPBadRequest(
                 reason='Failed to obtain proper request token.')

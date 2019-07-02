@@ -1,5 +1,6 @@
 from guillotina import configure
 
+CACHE_PREFIX = 'gauth-'
 
 app_settings = {
     # provide custom application settings here...

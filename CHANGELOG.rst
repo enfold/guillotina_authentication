@@ -1,7 +1,8 @@
-1.0.8 (unreleased)
+5.0.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Update for G5
+  [bloodbare]
 
 
 1.0.7 (2019-06-18)
