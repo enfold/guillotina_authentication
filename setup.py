@@ -14,13 +14,12 @@ except IOError:
 
 setup(
     name='guillotina_authentication',
-    version='1.0.8.dev0',
+    version=open('VERSION').read().strip(),
     description='Authenticate Guillotina with various providers',
     long_description=README,
     install_requires=[
-        'guillotina>=4.2.10,<5',
-        'aioauth-client',
-        'guillotina_rediscache>=2.0.4'
+        'guillotina>=5.0.0a10',
+        'aioauth-client'
     ],
     author='Nathan Van Gheem',
     author_email='vangheem@gmail.com',

@@ -4,7 +4,9 @@ from urllib.parse import urlencode
 
 import aioauth_client
 from guillotina import app_settings
-from guillotina_authentication import cache, exceptions
+from guillotina.component import get_utility
+from guillotina.interfaces import ICacheUtility
+from guillotina_authentication import exceptions, CACHE_PREFIX
 
 aioauth_client.TwitterClient.authentication_url = 'https://api.twitter.com/oauth/authenticate'  # noqa
 
@@ -71,13 +73,14 @@ async def get_authorization_url(client, *args, callback=None, **kwargs):
 
     args = list(args)
     url = kwargs.pop('url', client.authorize_url)
+    cache_utility = get_utility(ICacheUtility)
     if client.provider in oauth1_providers:
         request_token, request_token_secret, _ = await client.get_request_token(  # noqa
             oauth_callback=callback
         )
         args.append(request_token)
         params = {'oauth_token': request_token or client.oauth_token}
-        await cache.put(request_token, request_token_secret)
+        await cache_utility.put(CACHE_PREFIX + request_token, request_token_secret)
         return url + '?' + urlencode(params)
     else:
         params = dict(client.params, **kwargs)
@@ -91,7 +94,7 @@ async def get_authorization_url(client, *args, callback=None, **kwargs):
         if client.send_state:
             params['state'] = sha1(str(
                 aioauth_client.RANDOM()).encode('ascii')).hexdigest()
-            await cache.put(params['state'], 'nonce')
+            await cache_utility.put(CACHE_PREFIX + params['state'], 'nonce')
         return url + '?' + urlencode(params)
 
 

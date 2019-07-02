@@ -1,10 +1,13 @@
 import logging
 import math
 import time
+from lru import LRU
 
 from guillotina_authentication.user import OAuthUser
 from guillotina_authentication import utils
-from guillotina_rediscache import cache
+from guillotina.contrib import cache
+from guillotina.exceptions import ContainerNotFound
+from guillotina.utils import get_current_container
 
 logger = logging.getLogger(__name__)
 
@@ -13,11 +16,10 @@ NON_IAT_VERIFY = {
     'verify_iat': False,
 }
 
+LOCAL_CACHE = LRU(100)
+
 
 class OAuthClientIdentifier:
-
-    def __init__(self, request):
-        self.request = request
 
     def get_user_cache_key(self, login):
         return '{}-{}-{}'.format(
@@ -35,9 +37,8 @@ class OAuthClientIdentifier:
             return
 
         cache_key = self.get_user_cache_key(token['token'])
-        store = cache.get_memory_cache()
         try:
-            return store[cache_key]
+            return LOCAL_CACHE[cache_key]
         except KeyError:
             pass
 
@@ -56,8 +57,13 @@ class OAuthClientIdentifier:
             return
 
         user = OAuthUser(user_id=user.id, properties=user_data)
-        container_id = getattr(self.request, '_container_id', None)
 
-        user.apply_scope(validated_jwt, container_id)
-        store[cache_key] = user
+        try:
+            container = get_current_container()
+        except ContainerNotFound:
+            container = None
+
+        if container is not None:
+            user.apply_scope(validated_jwt, container.id)
+        LOCAL_CACHE[cache_key] = user
         return user
