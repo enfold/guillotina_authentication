@@ -1,7 +1,8 @@
 5.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Adding VERSION to manifest
+  [bloodbare]
 
 
 5.0.0 (2019-07-07)
