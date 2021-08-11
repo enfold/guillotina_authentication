@@ -8,6 +8,7 @@ from guillotina.event import notify
 from guillotina.events import UserLogin
 from guillotina.interfaces import IApplication, IContainer, ICacheUtility
 from guillotina.response import HTTPBadRequest, HTTPFound, HTTPNotFound
+from guillotina.utils import get_object_url
 from guillotina_authentication import exceptions, utils, CACHE_PREFIX
 
 http_exception_mappings = {
@@ -55,13 +56,13 @@ async def auth(context, request):
             raise ExcType(content={
                 'reason': reason.format(provider=provider)
             })
-    if 'callback' not in request.url.query:
-        callback_url = str(request.url.with_path('@callback/' + provider))
+    if 'callback' not in request.query:
+        callback_url = f'{get_object_url(context)}/@callback/{provider}'
     else:
-        callback_url = request.url.query['callback']
+        callback_url = request.query.get('callback')
     return HTTPFound(await utils.get_authentication_url(
         client, callback=callback_url,
-        scope=request.url.query.get('scope') or ''))
+        scope=request.query.get('scope') or ''))
 
 
 @configure.service(context=IApplication, method='GET',
@@ -88,11 +89,14 @@ async def authorize(context, request):
             raise ExcType(content={
                 'reason': reason.format(provider=provider)
             })
-    callback_url = str(request.url.with_path('@callback/' + provider))
+
+    if 'callback' not in request.query:
+        callback_url = f'{get_object_url(context)}/@callback/{provider}'
+    else:
+        callback_url = request.query.get('callback')
     return HTTPFound(await utils.get_authorization_url(
         client, callback=callback_url,
-        scope=request.url.query.get('scope') or ''),
-        access_type='offline')
+        scope=request.query.get('scope') or ''))
 
 
 @configure.service(context=IApplication, method='GET',
@@ -119,26 +123,26 @@ async def auth_callback(context, request):
             oauth_token_secret=oauth_token_secret)
     else:
         client = utils.get_client(provider)
-        if 'error' in request.url.query:
-            raise HTTPBadRequest(content=dict(request.url.query))
+        if 'error' in request.query:
+            raise HTTPBadRequest(content=dict(request.query))
 
-        if 'code' not in request.url.query:
-            raise HTTPBadRequest(content=dict(request.url.query))
+        if 'code' not in request.query:
+            raise HTTPBadRequest(content=dict(request.query))
 
-        code = request.url.query['code']
+        code = request.query.get('code')
 
-        if 'callback' not in request.url.query:
-            callback = str(request.url.with_path('@callback/' + provider))
+        if 'callback' not in request.query:
+            callback_url = f'{get_object_url(context)}/@callback/{provider}'
         else:
-            callback = request.url.query['callback']
+            callback_url = request.query.get('callback')
 
         forwarded_proto = request.headers.get('X-Forwarded-Proto', None)
         if forwarded_proto and forwarded_proto != request.scheme:
-            callback = callback.replace(
+            callback_url = callback_url.replace(
                 request.scheme + '://', forwarded_proto + '://')
 
         otoken, otoken_data = await client.get_access_token(
-            code, redirect_uri=callback)
+            code, redirect_uri=callback_url)
 
         client_args = dict(
             access_token=otoken,
@@ -160,7 +164,7 @@ async def auth_callback(context, request):
         'client': provider,
         'client_args': client_args,
         'allowed_scopes': user_data.get('allowed_scopes'),
-        'scope': request.url.query.get('scope').split(' '),
+        'scope': request.query.get('scope', '').split(' '),
         'identifier': 'oauth'
     }, timeout=timeout)
 
