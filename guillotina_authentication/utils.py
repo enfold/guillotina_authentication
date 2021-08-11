@@ -29,11 +29,31 @@ class HydraClient(aioauth_client.OAuth2Client):
         }
 
 
+class KeyCloakClient(aioauth_client.OAuth2Client):
+
+    @property
+    def user_info_url(self):
+        return os.path.join(self.base_url, 'userinfo')
+
+    @staticmethod
+    def user_parse(data):
+        return {
+            'id': data['sub'],
+            'allowed_scopes': data.get('allowed_scopes') or [],
+            'data': data.get('data') or {},
+            'email': data.get('email'),
+            'phone': data.get('phone'),
+            'username': data.get('username')
+        }
+
+
+
 config_mappings = {
     'twitter': aioauth_client.TwitterClient,
     'facebook': aioauth_client.FacebookClient,
     'github': aioauth_client.GithubClient,
     'google': aioauth_client.GoogleClient,
+    'keycloak': KeyCloakClient,
     'hydra': HydraClient
 }
 
