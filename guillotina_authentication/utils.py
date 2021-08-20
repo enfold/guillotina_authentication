@@ -43,7 +43,9 @@ class KeyCloakClient(aioauth_client.OAuth2Client):
             'data': data.get('data') or {},
             'email': data.get('email'),
             'phone': data.get('phone'),
-            'username': data.get('username')
+            'username': data.get('preferred_username'),
+            'first_name': data.get('given_name'),
+            'last_name': data.get('family_name'),
         }
 
 

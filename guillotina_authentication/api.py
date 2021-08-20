@@ -8,7 +8,7 @@ from guillotina.event import notify
 from guillotina.events import UserLogin
 from guillotina.interfaces import IApplication, IContainer, ICacheUtility
 from guillotina.response import HTTPBadRequest, HTTPFound, HTTPNotFound
-from guillotina.utils import get_object_url
+from guillotina.utils import get_url
 from guillotina_authentication import exceptions, utils, CACHE_PREFIX
 
 http_exception_mappings = {
@@ -57,9 +57,10 @@ async def auth(context, request):
                 'reason': reason.format(provider=provider)
             })
     if 'callback' not in request.query:
-        callback_url = f'{get_object_url(context)}/@callback/{provider}'
+        callback_url = f'{get_url(request, "/")}@callback/{provider}'
     else:
         callback_url = request.query.get('callback')
+
     return HTTPFound(await utils.get_authentication_url(
         client, callback=callback_url,
         scope=request.query.get('scope') or ''))
@@ -131,10 +132,7 @@ async def auth_callback(context, request):
 
         code = request.query.get('code')
 
-        if 'callback' not in request.query:
-            callback_url = f'{get_object_url(context)}/@callback/{provider}'
-        else:
-            callback_url = request.query.get('callback')
+        callback_url = f'{get_url(request, "/")}@callback/{provider}'
 
         forwarded_proto = request.headers.get('X-Forwarded-Proto', None)
         if forwarded_proto and forwarded_proto != request.scheme:
@@ -155,6 +153,12 @@ async def auth_callback(context, request):
 
     client = utils.get_client(provider, **client_args)
     user, user_data = await client.user_info()
+    groups = list()
+    for groupname in user_data.get('groups', list()):
+        name = groupname
+        if groupname.startswith('/'):
+            name = name[1:]
+        groups.append(name)
 
     jwt_token, data = authenticate_user(user.id, {
         'first_name': user.first_name,
@@ -163,17 +167,18 @@ async def auth_callback(context, request):
         'username': user.username,
         'client': provider,
         'client_args': client_args,
+        'groups': groups,
         'allowed_scopes': user_data.get('allowed_scopes'),
         'scope': request.query.get('scope', '').split(' '),
         'identifier': 'oauth'
     }, timeout=timeout)
 
     await notify(UserLogin(user, jwt_token))
-
     result = {
         'exp': data['exp'],
         'token': jwt_token
     }
+
     if app_settings.get('auth_callback_url'):
         url = yarl.URL(
             app_settings['auth_callback_url']).with_query(result)

@@ -1,6 +1,15 @@
 from guillotina.auth.users import GuillotinaUser
 from guillotina_authentication import utils
 from guillotina.auth import authenticate_user
+from guillotina.contrib.dbusers.content.groups import Group
+from guillotina.interfaces.content import IDatabase
+from guillotina.utils import get_current_container
+from guillotina.utils import navigate_to
+import logging
+import typing
+
+
+logger = logging.getLogger("guillotina_authentication.user")
 
 
 class OAuthUser(GuillotinaUser):
@@ -9,9 +18,13 @@ class OAuthUser(GuillotinaUser):
         super(OAuthUser, self).__init__(user_id, properties)
         self._validated_jwt = None
 
-    def apply_scope(self, validated_jwt, container_id):
+    async def apply_scope(self, validated_jwt, container_id):
         self._validated_jwt = validated_jwt
         allowed_scopes = validated_jwt.get('allowed_scopes') or []
+
+        if 'groups' in validated_jwt:
+            self._groups = validated_jwt.get('groups') or []
+
         for scope in validated_jwt.get('scope') or []:
             if scope not in allowed_scopes:
                 continue
@@ -28,6 +41,32 @@ class OAuthUser(GuillotinaUser):
                 self._roles[split[-1]] = 1
             if split[-2] == 'permission':
                 self._permissions[split[-1]] = 1
+
+        # Get roles and permissions from the group membership
+        # XXX: This is a hack, since creating a group
+        # actually creates a "Group" type, which is different from
+        # the "GuillotinaGroup" as found by guillotina/api/user.py get_user_info
+
+        container = get_current_container()
+        if container:
+            # We want to go to the root object
+            site = container
+            while not IDatabase.providedBy(container):
+                site = container
+                container = container.__parent__
+
+            for groupname in self._groups:
+                try:
+                    group: typing.Optional[Group] = await navigate_to(site, "groups/{}".format(groupname))
+                except KeyError:
+                    group = None
+                except Exception:
+                    logger.error("Error getting group", exc_info=True)
+                    group = None
+                if group:
+                    self._roles.update(group.roles)
+                    self._permissions.update(group.permissions)
+
 
     async def refresh(self, scopes):
         client = utils.get_client(
