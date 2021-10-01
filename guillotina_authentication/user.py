@@ -17,6 +17,10 @@ class OAuthUser(GuillotinaUser):
     def __init__(self, user_id, properties):
         super(OAuthUser, self).__init__(user_id, properties)
         self._validated_jwt = None
+        self.username = properties.get('preferred_username')
+        self.first_name = properties.get('given_name')
+        self.last_name = properties.get('family_name')
+        self.email = properties.get('email')
 
     async def apply_scope(self, validated_jwt, container_id):
         self._validated_jwt = validated_jwt
@@ -55,7 +59,10 @@ class OAuthUser(GuillotinaUser):
                 site = container
                 container = container.__parent__
 
-            for groupname in self._groups:
+            for entry in self._groups:
+                groupname = entry
+                if groupname.startswith('/'):
+                    groupname = groupname[1:]
                 try:
                     group: typing.Optional[Group] = await navigate_to(site, "groups/{}".format(groupname))
                 except KeyError:
@@ -68,7 +75,7 @@ class OAuthUser(GuillotinaUser):
                     self._permissions.update(group.permissions)
 
 
-    async def refresh(self, scopes):
+    async def refresh(self, scopes=None):
         client = utils.get_client(
             self._validated_jwt['client'],
             **self._validated_jwt['client_args'])
@@ -87,6 +94,9 @@ class OAuthUser(GuillotinaUser):
             timeout = 60 * 60 * 1
 
         user, user_data = await client.user_info()
+
+        if not scopes:
+            scopes = self._validated_jwt['scope']
 
         jwt_token, data = authenticate_user(user.id, {
             'first_name': user.first_name,
