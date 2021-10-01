@@ -13,7 +13,6 @@ app_settings = {
         #   'scope': 'user:email'
         # }
     },
-    'auth_callback_url': None,
     'auth_user_identifiers': [
         'guillotina_authentication.identifier.OAuthClientIdentifier'
     ]

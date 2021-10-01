@@ -186,8 +186,7 @@ async def auth_callback(context, request):
     }
 
     if app_settings.get('auth_callback_url'):
-        url = yarl.URL(
-            app_settings['auth_callback_url']).with_query(result)
+        url = yarl.URL(app_settings['auth_callback_url'])
         response = HTTPFound(str(url))
     else:
         response = HTTPFound(get_url(request, "/"))
