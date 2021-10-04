@@ -193,7 +193,7 @@ async def auth_callback(context, request):
     #breakpoint()
     expires = datetime.utcnow() + timedelta(seconds=timeout)
     expires.strftime("%a, %d %b %Y %H:%M:%S GMT")
-    response.headers['Set-Cookie'] = f"auth_token={jwt_token}; Path=/; Expires={expires}; Secure; HttpOnly; SameSite=Strict"
+    response.headers['Set-Cookie'] = f"auth_token={jwt_token}; Path=/; Expires={expires}; Secure; HttpOnly; SameSite=Lax"
     #return result
     return response
 
